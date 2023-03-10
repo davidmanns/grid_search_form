@@ -2,15 +2,15 @@
 This file defines actions, i.e. functions the URLs are mapped into
 The @action(path) decorator exposed the function at URL:
 
-    http://127.0.0.1:8000/{app_name}/{path}
+	http://127.0.0.1:8000/{app_name}/{path}
 
 If app_name == '_default' then simply
 
-    http://127.0.0.1:8000/{path}
+	http://127.0.0.1:8000/{path}
 
 If path == 'index' it can be omitted:
 
-    http://127.0.0.1:8000/
+	http://127.0.0.1:8000/
 
 The path follows the bottlepy syntax.
 
@@ -33,40 +33,38 @@ from py4web.utils.grid import Grid, GridClassStyleBulma, Column
 from py4web.utils.form import Form, FormStyleBulma
 from yatl.helpers import *
 
-
+#Note, I put made this in the index controller. If it is called without
+#the 'index' argument, the grid will display, and page turn buttons
+#work, but Add, Details, Edit and Delete buttons all get '404' because
+#of an extra '/' at the beginning of the URL!
 @action("index", method=['POST', 'GET'])
 @action('index/<path:path>', method=['POST', 'GET'])
 @action.uses("index.html", db)
 def index(path=None):
 	
-    query = db.people.id>0
-    message = DIV(
-                P("Out of the box, use 'a' in the filter box,\
-                  to display all names containing 'a'. The results\
-                  are more than one page. Click on page 2, and the results\
-                  will be unfiltered, unless the filter button is clicked again"),
-                P("enabling the workarouns, lines 58-59 of controller will fix page turning")
-    )
-
-    search_form=Form([
-		Field('name_contains', 'string',
-	            default=request.query.get('name_contains'))],
+	query = db.people.id>0
+	message = DIV(
+				P("By experiment, this is the simplest way to make search form work"),
 	)
 
-    #work around for page turning losing filter,
-    #because filter parameters are url parameters
-    #if len(search_form.vars) == 0:
-    #    search_form.vars = request.query
-		
-    if search_form.vars.get('name_contains'):
-        query = db.people.name.like('%'+search_form.vars.get('name_contains')+'%')
+	search_form=Form([
+		Field('name_contains', 'string')],
+		keep_values=True	#so filter values remain displayed and as defaults until changed
+	)
+	
+	#preserve pagination and filter context from call parameters
+	if len(search_form.vars) == 0:
+		search_form.vars = request.query
 
-    grid = Grid(path, query,
-            orderby=db.people.name,
+	if search_form.vars.get('name_contains'):
+		query = db.people.name.like('%'+search_form.vars.get('name_contains')+'%')
+
+	grid = Grid(path, query,
+			orderby=db.people.name,
 			columns=[db.people.name],
 			grid_class_style=GridClassStyleBulma,
 			formstyle=FormStyleBulma,
 			search_form=search_form,
-            rows_per_page=5
+			rows_per_page=5
 			)
-    return locals()
+	return locals()
